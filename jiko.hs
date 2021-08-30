@@ -1,7 +1,40 @@
 module Main where
 
-data Program = JInteger Int | JWord String | Quotation [Program] | JException String
-    deriving Show
+import qualified Data.Map as Map
+
+data Program = JInteger Int | JWord String | JQuotation [Program] | JException String
+
+instance Show Program where
+    show (JInteger i) = show i
+    show (JWord w) = w
+    show (JQuotation ps) = "[ " ++ concatMap show ps ++ " ]"
+    show (JException s) = "Exception: " ++ s
+
+data Context = Context { 
+    stack :: [Program], 
+    queue :: [Program], 
+    dict :: Map.Map String Program,
+    quotationLevel :: Int }
+
+instance Show Context where
+    show c = "s: " ++ show (stack c) ++ "\nq: " ++ show (queue c) ++ "\nd: " ++ show (dict c)
+
+eval :: Context -> Context
+eval c | null (queue c) = c
+eval c = case p of  JInteger i -> c { stack = p : s, queue = remainingQueue}
+                    JWord w -> case Map.lookup w d of
+                        Just def -> c {queue = def : remainingQueue}
+                        Nothing -> c { stack = JWord w : s, queue = remainingQueue }
+                    JQuotation ps -> c { stack = JQuotation ps : s }
+                    JException e -> c { stack = JException e : s }
+
+    where
+        (p : remainingQueue) = queue c
+        s = stack c
+        d = dict c
+
+pushQueue :: Context -> [Program] -> Context
+pushQueue c ps = c { queue = queue c ++ ps }
 
 isSep :: Char -> Bool
 isSep c = c == ' ' || c == '\n'
@@ -32,13 +65,16 @@ parse xs = ps ++ parse remaining
     where
         (ps, remaining) = parse1 xs
 
-repl :: IO ()
-repl = do
+repl :: Context -> IO ()
+repl c = do
     putStr "> "
     l <- getLine
-    print . parse $ l
-    repl
+    let nc = case l of
+                "$step" -> eval c
+                cs -> pushQueue c (parse l)
+    print nc
+    repl nc
 
 main :: IO ()
-main = repl
+main = repl $ Context { stack = [], queue = [], dict = Map.empty, quotationLevel = 0 }
     
