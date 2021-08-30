@@ -25,7 +25,7 @@ eval c = case p of  JInteger i -> c { stack = p : s, queue = remainingQueue}
                     JWord w -> case Map.lookup w d of
                         Just def -> c {queue = def : remainingQueue}
                         Nothing -> c { stack = JWord w : s, queue = remainingQueue }
-                    JQuotation ps -> c { stack = JQuotation ps : s }
+                    JQuotation ps -> c { stack = JQuotation ps : s, queue = remainingQueue }
                     JException e -> c { stack = JException e : s }
 
     where
@@ -76,5 +76,5 @@ repl c = do
     repl nc
 
 main :: IO ()
-main = repl $ Context { stack = [], queue = [], dict = Map.empty, quotationLevel = 0 }
+main = repl $ Context { stack = [], queue = [], dict = Map.fromList [("one", JInteger 1), ("rec", JQuotation [JInteger 1, JWord "rec"])], quotationLevel = 0 }
     
