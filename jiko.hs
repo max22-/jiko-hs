@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.Map as Map
+import Data.List ( intercalate )
 import Data.Char ( isDigit )
 
 data Program = JInteger Int | JWord String | JQuotation [Program] | JException String
@@ -8,7 +9,7 @@ data Program = JInteger Int | JWord String | JQuotation [Program] | JException S
 instance Show Program where
     show (JInteger i) = show i
     show (JWord w) = w
-    show (JQuotation ps) = "[ " ++ concatMap show ps ++ " ]"
+    show (JQuotation ps) = "[ " ++ (unwords . map show) ps ++ " ]"
     show (JException s) = "Exception: " ++ s
 
 data Context = Context { 
@@ -24,6 +25,7 @@ eval :: Context -> Context
 eval c | null (queue c) = c
 eval c = case p of  JInteger i -> c { stack = p : s, queue = remainingQueue}
                     JWord w -> case Map.lookup w d of
+                        Just (JQuotation q) -> c { queue = q ++ remainingQueue }
                         Just def -> c {queue = def : remainingQueue}
                         Nothing -> c { stack = JWord w : s, queue = remainingQueue }
                     JQuotation ps -> c { stack = JQuotation ps : s, queue = remainingQueue }
