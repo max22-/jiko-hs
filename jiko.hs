@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.Map as Map
+import Data.Char ( isDigit )
 
 data Program = JInteger Int | JWord String | JQuotation [Program] | JException String
 
@@ -38,9 +39,6 @@ pushQueue c ps = c { queue = queue c ++ ps }
 
 isSep :: Char -> Bool
 isSep c = c == ' ' || c == '\n'
-
-isDigit :: Char -> Bool
-isDigit c = c >= '0' && c <= '9'
 
 discardSep :: String -> String
 discardSep = dropWhile isSep
