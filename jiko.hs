@@ -6,10 +6,14 @@ import Data.Char ( isDigit )
 
 data Program = JInteger Int | JWord String | JQuotation [Program] | JException String
 
+showJList :: Show a => [a] -> String
+showJList [] = "[ ]"
+showJList xs = "[ " ++ (unwords . map show) xs ++ " ]"
+
 instance Show Program where
     show (JInteger i) = show i
     show (JWord w) = w
-    show (JQuotation ps) = "[ " ++ (unwords . map show) ps ++ " ]"
+    show (JQuotation ps) = "[ " ++ showJList ps ++ " ]"
     show (JException s) = "Exception: " ++ s
 
 data Context = Context { 
@@ -19,7 +23,7 @@ data Context = Context {
     quotationLevel :: Int }
 
 instance Show Context where
-    show c = "s: " ++ show (stack c) ++ "\nq: " ++ show (queue c) ++ "\nd: " ++ show (dict c)
+    show c = "s: " ++ showJList (stack c) ++ "\nq: " ++ showJList (queue c)
 
 eval :: Context -> Context
 eval c | null (queue c) = c
@@ -77,4 +81,3 @@ repl c = do
 
 main :: IO ()
 main = repl $ Context { stack = [], queue = [], dict = Map.fromList [("one", JInteger 1), ("rec", JQuotation [JInteger 1, JWord "rec"])], quotationLevel = 0 }
-    
