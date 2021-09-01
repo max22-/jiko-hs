@@ -4,44 +4,32 @@ import qualified Data.Map as Map
 import Data.List ( intercalate )
 import Data.Char ( isDigit )
 
-data Program = JInteger Int | JWord String | JQuotation [Program] | JException String
-
-showJList :: Show a => [a] -> String
-showJList [] = "[ ]"
-showJList xs = "[ " ++ (unwords . map show) xs ++ " ]"
-
-instance Show Program where
-    show (JInteger i) = show i
-    show (JWord w) = w
-    show (JQuotation ps) = "[ " ++ showJList ps ++ " ]"
-    show (JException s) = "Exception: " ++ s
-
-data Context = Context { 
-    stack :: [Program], 
-    queue :: [Program], 
-    dict :: Map.Map String Program,
-    quotationLevel :: Int }
-
-instance Show Context where
-    show c = "s: " ++ showJList (stack c) ++ "\nq: " ++ showJList (queue c)
+import DataStructures
+import Words
 
 eval :: Context -> Context
 eval c | null (queue c) = c
-eval c = case p of  JInteger i -> c { stack = p : s, queue = remainingQueue}
-                    JWord w -> case Map.lookup w d of
-                        Just (JQuotation q) -> c { queue = q ++ remainingQueue }
-                        Just def -> c {queue = def : remainingQueue}
-                        Nothing -> c { stack = JWord w : s, queue = remainingQueue }
-                    JQuotation ps -> c { stack = JQuotation ps : s, queue = remainingQueue }
-                    JException e -> c { stack = JException e : s }
-
+eval c = case ql of
+            0 -> case p of  
+                JInteger i -> push p nc
+                JWord w -> case Map.lookup w d of
+                    Just (JQuotation q) -> queuePushFront q nc
+                    Nothing -> case Map.lookup w prelude of
+                        Just bw -> bw nc
+                        Nothing -> push p nc
+                    _ -> push (JException "Invalid definition") nc
+                JQuotation ps -> push p nc
+                JException e -> push p nc
+            n -> case p of
+                JWord "]" -> closingBracket nc
+                p -> (cons . push p) nc
+                    
     where
         (p : remainingQueue) = queue c
+        nc = c { queue = remainingQueue }
         s = stack c
         d = dict c
-
-pushQueue :: Context -> [Program] -> Context
-pushQueue c ps = c { queue = queue c ++ ps }
+        ql = quotationLevel c
 
 isSep :: Char -> Bool
 isSep c = c == ' ' || c == '\n'
@@ -75,9 +63,13 @@ repl c = do
     l <- getLine
     let nc = case l of
                 "$step" -> eval c
-                cs -> pushQueue c (parse l)
+                cs -> queuePushBack (parse l) c
     print nc
     repl nc
 
 main :: IO ()
-main = repl $ Context { stack = [], queue = [], dict = Map.fromList [("one", JInteger 1), ("rec", JQuotation [JInteger 1, JWord "rec"])], quotationLevel = 0 }
+main = repl $ Context { 
+    stack = [], 
+    queue = [], 
+    dict = Map.fromList [("one", JInteger 1), ("rec", JQuotation [JInteger 1, JWord "rec"])],
+    quotationLevel = 0 }
