@@ -15,6 +15,10 @@ closingBracket :: BuiltInWord
 closingBracket c | quotationLevel c == 0 = push (JException "[] mismatch") c
 closingBracket c = c { quotationLevel = quotationLevel c - 1 }
 
+def :: BuiltInWord
+def c@Context{stack = JWord w : JQuotation q : rest} = c { dict = Map.insert w (JQuotation q) (dict c) }
+def c = push (JException "type error") c
+
 dup :: BuiltInWord
 dup c = case uncons s of
             Nothing -> c { stack = [JException "Stack underflow"] }
@@ -31,5 +35,6 @@ prelude :: Map.Map String BuiltInWord
 prelude = Map.fromList [
     ("[", openingBracket),
     ("]", closingBracket),
+    ("#", def),
     ("dup", dup)
     ]
