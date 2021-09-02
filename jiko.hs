@@ -6,6 +6,7 @@ import Data.Char ( isDigit )
 
 import DataStructures
 import Words
+import System.IO ( hFlush, stdout )
 
 eval :: Context -> Context
 eval c | null (queue c) = c
@@ -60,6 +61,7 @@ parse xs = ps ++ parse remaining
 repl :: Context -> IO ()
 repl c = do
     putStr "> "
+    hFlush stdout
     l <- getLine
     let nc = case l of
                 "$step" -> eval c
