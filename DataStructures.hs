@@ -10,14 +10,14 @@ data StackElement = JInteger Int | JWord String | JQuotation [StackElement] | JE
 
 type Dict = Map.Map String (Program ())
 
-showJList :: Show a => [a] -> String
-showJList [] = "[]"
-showJList xs = "[ " ++ (unwords . map show) xs ++ " ]"
+showJList :: Show a => Bool -> [a] -> String
+showJList reversed [] = "[]"
+showJList reversed xs = "[ " ++ (unwords . map show . if reversed then reverse else id) xs ++ " ]"
 
 instance Show StackElement where
     show (JInteger i) = show i
     show (JWord w) = w
-    show (JQuotation ps) = showJList ps
+    show (JQuotation ps) = showJList True ps
     show (JException s) = "Exception: " ++ s
 
 data Context = Context { 
@@ -27,10 +27,15 @@ data Context = Context {
     quotationLevel :: Int }
 
 instance Show Context where
-    show c = "s: " ++ showJList (stack c) ++ "\nq: " ++ showJList (queue c)
+    show c = "s: " ++ showJList True (stack c) ++ "\nq: " ++ showJList False (queue c)
 
 type Program a = StateT Context IO a
 
+showContext :: Program ()
+showContext = get >>= liftIO . print
+
+showStack :: Program ()
+showStack = get >>= liftIO . putStrLn . showJList True . stack
 
 push :: StackElement -> Program ()
 push se = modify (\c -> c {stack = se : stack c})
@@ -54,6 +59,9 @@ queuePop = do
     case queue c of
         [] -> return Nothing
         toq : rest -> put c { queue = rest } >> return (Just toq)
+
+queueIsEmpty :: Program Bool
+queueIsEmpty = get >>= (return . ( == 0 ) . length . queue )
 
 define :: Program ()
 define = do

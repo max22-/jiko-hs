@@ -9,8 +9,8 @@ import Words
 import System.IO ( hFlush, stdout )
 import Control.Monad.State ( MonadIO(liftIO), evalStateT, get )
 
-eval :: Program ()
-eval = do
+evalStep :: Program ()
+evalStep = do
     mse <- queuePop
     case mse of
       Nothing -> return ()
@@ -37,6 +37,10 @@ eval = do
                   JQuotation _ -> push se >> cons
                   JException _ -> push se >> cons
 
+eval :: Program ()
+eval = do
+    e <- queueIsEmpty
+    if e then return () else {- showContext >> -} evalStep >> eval
 
 isSep :: Char -> Bool
 isSep c = c == ' ' || c == '\n'
@@ -69,10 +73,9 @@ repl = do
     liftIO $ putStr "> "
     liftIO $ hFlush stdout
     l <- liftIO getLine
-    case l of
-        "$step" -> eval
-        cs -> mapM_ queuePushBack (parse l)
-    get >>= liftIO . print 
+    mapM_ queuePushBack (parse l)
+    eval
+    showStack
     repl
 
 main :: IO ()
