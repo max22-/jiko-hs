@@ -1,40 +1,31 @@
 module Words where
 
-import Data.List
 import qualified Data.Map as Map
 import DataStructures
-import System.Posix.ByteString (openDirStream)
 
-type BuiltInWord = Context -> Context
+dup :: Program ()
+dup = do
+    mse <- pop
+    case mse of
+        Just se -> push se >> push se
+        Nothing -> return ()
 
-openingBracket :: BuiltInWord
-openingBracket c | quotationLevel c == 0 = push (JQuotation []) c { quotationLevel = 1 }
-openingBracket c = c { quotationLevel = quotationLevel c + 1 }
+cons :: Program ()
+cons = do
+    e <- pop
+    q <- pop
+    case (e, q) of
+        (Just (JInteger i), Just (JQuotation q)) -> push (JQuotation (q ++ [JInteger i]))
+        (Just (JWord w), Just (JQuotation q)) -> push (JQuotation (q ++ [JWord w]))
+        (_, Nothing) -> return ()
+        _ -> push (JException "type error")
 
-closingBracket :: BuiltInWord
-closingBracket c | quotationLevel c == 0 = push (JException "[] mismatch") c
-closingBracket c = c { quotationLevel = quotationLevel c - 1 }
 
-def :: BuiltInWord
-def c@Context{stack = JWord w : JQuotation q : rest} = c { dict = Map.insert w (JQuotation q) (dict c) }
-def c = push (JException "type error") c
-
-dup :: BuiltInWord
-dup c = case uncons s of
-            Nothing -> c { stack = [JException "Stack underflow"] }
-            Just (p, _) -> c { stack = p : s }
-    where
-        s = stack c
-
-cons :: BuiltInWord
-cons c@Context{stack = JInteger i : JQuotation q : rest} = c { stack = JQuotation (q ++ [JInteger i]) : rest }
-cons c@Context{stack = JWord w : JQuotation q : rest} = c { stack = JQuotation (q ++ [JWord w]) : rest }
-cons c = push (JException "type errror") c
-
-prelude :: Map.Map String BuiltInWord
+prelude :: Map.Map String (Program ())
 prelude = Map.fromList [
-    ("[", openingBracket),
-    ("]", closingBracket),
-    ("#", def),
-    ("dup", dup)
+    ("[", openBracket),
+    ("]", closeBracket),
+    ("#", define),
+    ("dup", dup),
+    ("cons", cons)
     ]
