@@ -43,7 +43,7 @@ eval = do
     if e then return () else {- showContext >> -} evalStep >> eval
 
 isSep :: Char -> Bool
-isSep c = c == ' ' || c == '\n'
+isSep c = c == ' ' || c == '\n' || c == '\r'
 
 discardSep :: String -> String
 discardSep = dropWhile isSep
