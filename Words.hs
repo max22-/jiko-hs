@@ -2,7 +2,7 @@ module Words where
 
 import qualified Data.Map as Map
 import DataStructures
-import Control.Monad.State ( void, MonadState(put, get) )
+import Control.Monad.State ( void, MonadState(put, get), liftIO )
 
 dup :: Program ()
 dup = do
@@ -48,16 +48,43 @@ app = do
 
 cons :: Program ()
 cons = do
-    e <- pop
     q <- pop
+    e <- pop
     case (e, q) of
         (Just (JInteger i), Just (JQuotation q)) -> push (JQuotation (JInteger i : q))
         (Just (JWord w), Just (JQuotation q)) -> push (JQuotation (JWord w : q))
         (_, Nothing) -> return ()
         _ -> push (JException "type error")
 
+append :: Program ()
+append = do
+    q <- pop
+    e <- pop
+    case (e, q) of
+        (Just (JInteger i), Just (JQuotation q)) -> push (JQuotation (q ++ [JInteger i]))
+        (Just (JWord w), Just (JQuotation q)) -> push (JQuotation (q ++ [JWord w]))
+        (_, Nothing) -> return ()
+        _ -> push (JException "type error")
+
+swons :: Program ()
+swons = swap >> cons
+
 clear :: Program ()
 clear = get >>= (\c -> put c {stack = [] })
+
+dot :: Program ()
+dot = do
+    mse <- pop
+    case mse of
+        Just se -> liftIO . print $ se
+        Nothing -> return ()
+
+stack_ :: Program ()
+stack_ = do
+    c <- get
+    push . JQuotation $ stack c
+
+
 
 prelude :: Map.Map String (Program ())
 prelude = Map.fromList [
@@ -66,10 +93,14 @@ prelude = Map.fromList [
     ("#", define),
     ("dup", dup),
     ("swap", swap),
-    (".", Words.drop),
+    ("drop", Words.drop),
     ("quote", quote),
     ("cat", cat),
     ("i", app),
     ("cons", cons),
-    ("clear", clear)
+    ("swons", swons),
+    ("clear", clear),
+    (".", dot),
+    ("stack", stack_),
+    ("append", append)
     ]

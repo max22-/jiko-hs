@@ -12,7 +12,7 @@ type Dict = Map.Map String (Program ())
 
 showJList :: Show a => Bool -> [a] -> String
 showJList reversed [] = "[]"
-showJList reversed xs = "[ " ++ (unwords . map show . if reversed then reverse else id) xs ++ " ]"
+showJList reversed xs = "[ " ++ (unwords . map show) xs ++ " ]"
 
 instance Show StackElement where
     show (JInteger i) = show i
@@ -70,7 +70,7 @@ define = do
     case (w, definition) of
         (Just (JWord wn), Just (JQuotation q)) -> do
             c <- get
-            let nd = Map.insert wn (mapM_ queuePushFront q) (dict c)
+            let nd = Map.insert wn (modify (\c -> c { queue = q ++ queue c })) (dict c)
             put $ c {dict = nd}
             return ()
         (_, Nothing) -> return ()

@@ -30,12 +30,9 @@ evalStep = do
                 JException s -> push se
               1 | se == JWord "]" -> closeBracket
               _ -> case se of
-                  JInteger _ -> push se >> cons
-                  JWord "[" -> openBracket >> push se >> cons
-                  JWord "]" -> closeBracket >> push se >> cons
-                  JWord _ -> push se >> cons
-                  JQuotation _ -> push se >> cons
-                  JException _ -> push se >> cons
+                  JWord "[" -> openBracket >> push se >> swap >> append
+                  JWord "]" -> closeBracket >> push se >> swap >> append
+                  _ -> push se >> swap >> append
 
 eval :: Program ()
 eval = do
